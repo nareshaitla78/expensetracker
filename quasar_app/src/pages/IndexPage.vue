@@ -41,14 +41,19 @@ export default defineComponent({
       let options= {
         tooltip:{
           show:true,
+          formatter:function(params){
+            return params.name+"-"+params.value+"%"
+          }
         },
-        xAxis: {
+        xAxis: [
+        {
           type: 'category',
           data: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-        },
-        yAxis: {
+        }
+        ],
+        yAxis: [{
           type: 'value',
-        },
+        }],
         series: [
           {
             data: [120, 200, 150, 80, 70, 110, 130],
