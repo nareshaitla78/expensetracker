@@ -82,7 +82,7 @@
                 const response = await axios.post('/login', this.loginData);
                 this.loginSuccess = true;
                 this.loginMessage = response.data.message;
-                this.$router.push('/expense-tracker'); // Redirect to Expense Tracker
+                this.$router.push('expense-tracker'); // Redirect to Expense Tracker
             } catch (error) {
                 this.loginSuccess = false;
                 this.loginMessage = error.response?.data.error || 'Login failed';

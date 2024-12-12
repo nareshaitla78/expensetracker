@@ -2,10 +2,12 @@
   <q-page class="q-pa-md">
     <q-card>
       <q-card-section>
-        <div class="text-h6">Expense Tracker</div>
+        <div class="flex justify-between">
+          <div class="text-h6">Expense Tracker</div>
+          <q-btn color="secondary" label="Logout" @click="logout" />
+        </div>
       </q-card-section>
 
-      <!-- Expense Input Section -->
       <q-card-section>
         <q-input v-model="expense.amount" label="Amount" type="number" filled />
         <q-select 
@@ -14,12 +16,11 @@
           label="Select Category" 
           filled
         />
-        <q-btn class="q-mt-md" color="primary" label="Add Expense" @click="addExpense" />
+        <q-btn color="primary" label="Add Expense" class="q-mt-md" @click="addExpense" />
       </q-card-section>
 
-      <!-- Expense List Section -->
       <q-card-section>
-        <div class="text-h6">Monthly Expenses: {{ totalExpense }}</div>
+        <div class="text-h6">Monthly Expenses: ₹{{ totalExpense }}</div>
         <q-list bordered>
           <q-item v-for="(item, index) in expenses" :key="index">
             <q-item-section>
@@ -28,67 +29,58 @@
           </q-item>
         </q-list>
       </q-card-section>
-
-      <!-- Logout Button -->
-      <q-card-section>
-        <q-btn class="q-mt-md" color="secondary" label="Logout" @click="logout" />
-      </q-card-section>
     </q-card>
   </q-page>
 </template>
 
 <script>
 import axios from 'axios';
-import { Notify } from 'quasar';  // For notifications
+
+axios.defaults.withCredentials = true; // Ensure cookies are sent with each request
 
 export default {
   data() {
     return {
-      expense: { amount: 0, category: '' },
-      expenses: [], // List of expenses
-      categories: ['Groceries', 'Shopping', 'Rent', 'Utilities', 'Miscellaneous'], // Dropdown options
+      expense: { amount: '', category: '' },
+      expenses: [],
+      categories: ['Groceries', 'Shopping', 'Rent', 'Utilities', 'Miscellaneous'],
     };
   },
   computed: {
     totalExpense() {
-      return this.expenses.reduce((sum, exp) => sum + parseFloat(exp.amount), 0);
+      return this.expenses.reduce((sum, expense) => sum + parseFloat(expense.amount), 0);
     },
   },
   methods: {
     async addExpense() {
       if (!this.expense.amount || !this.expense.category) {
-        this.$q.notify('Please fill all fields');
+        this.$q.notify({ message: 'Please fill in all fields', color: 'negative' });
         return;
       }
       try {
         const response = await axios.post('/add-expense', this.expense);
-        this.expenses.push(response.data); // Update local expenses
-        this.expense = { amount: 0, category: '' }; // Reset form
+        this.expenses.push(response.data);
+        this.expense = { amount: '', category: '' };
+        this.$q.notify({ message: 'Expense added successfully', color: 'positive' });
       } catch (error) {
-        this.$q.notify('Failed to add expense');
+        this.$q.notify({ message: 'Failed to add expense', color: 'negative' });
       }
     },
-
-    logout() {
-      // Clear session or authentication token (depending on your backend)
-      // Example for session-based logout:
-      axios.post('/logout').then(() => {
-        this.$router.push('/login'); // Redirect to login page
-      }).catch(() => {
-        Notify.create({
-          message: 'Logout failed',
-          color: 'negative',
-          position: 'top',
-        });
-      });
+    async logout() {
+      try {
+        await axios.post('/logout');
+        this.$router.push('/login');
+      } catch {
+        this.$q.notify({ message: 'Logout failed', color: 'negative' });
+      }
     },
   },
   async mounted() {
     try {
       const response = await axios.get('/expenses');
-      this.expenses = response.data; // Load initial expenses
-    } catch (error) {
-      this.$q.notify('Failed to fetch expenses');
+      this.expenses = response.data;
+    } catch {
+      this.$q.notify({ message: 'Failed to fetch expenses', color: 'negative' });
     }
   },
 };

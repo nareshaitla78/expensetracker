@@ -4,7 +4,7 @@ from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
-CORS(app, origins=["http://localhost:9000"])  # Allow only this origin
+CORS(app, supports_credentials=True, origins=["http://localhost:9000"])  # Allow credentials
 
 # Secret key for session management
 app.secret_key = 'your_secret_key'  # Replace with a strong secret key
@@ -20,27 +20,23 @@ class User(db.Model):
     username = db.Column(db.String(80), unique=True, nullable=False)
     password = db.Column(db.String(200), nullable=False)
 
+class Expense(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, nullable=False)  # Link to the User
+    category = db.Column(db.String(80), nullable=False)
+    amount = db.Column(db.Integer, nullable=False)
+
 # Initialize the database
 with app.app_context():
     db.create_all()
 
-@app.route('/api/get_data/', methods=['GET'])
-def hello_world():
-    return jsonify(ok=True, message="naresh hello nehaaaa")
-
 @app.route('/api/signup', methods=['POST'])
 def signup():
     data = request.json
-    print(f"Received signup data: {data}")  # Debugging output
-
-    # Check if username already exists
     if User.query.filter_by(username=data['username']).first():
         return jsonify({'error': 'Username already exists'}), 409
 
-    # Hash the password before storing it using pbkdf2:sha256
     hashed_password = generate_password_hash(data['password'], method='pbkdf2:sha256')
-    print(hashed_password, "hashed password")  # Debugging output
-
     new_user = User(username=data['username'], password=hashed_password)
     db.session.add(new_user)
     db.session.commit()
@@ -51,12 +47,7 @@ def signup():
 def login():
     data = request.json
     user = User.query.filter_by(username=data['username']).first()
-    print(user, "user checkkkkkkkk")
-    print(f"Login attempt with username: {data['username']}")
-    print(f"Login attempt with password: {data['password']}")
-
     if user and check_password_hash(user.password, data['password']):
-        print("ckeckkkkk")
         session['user_id'] = user.id
         return jsonify({'message': 'Login successful'}), 200
     
@@ -64,7 +55,7 @@ def login():
 
 @app.route('/api/logout', methods=['POST'])
 def logout():
-    session.pop('user_id', None)  # Remove the user ID from session
+    session.pop('user_id', None)
     return jsonify({'message': 'Logged out successfully'}), 200
 
 @app.route('/api/add-expense', methods=['POST'])
